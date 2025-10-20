@@ -1,0 +1,39 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main    # change if you deploy from another branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # If your app needs building (React/Vue/Angular), run build here.
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # If you use create-react-app / vite etc, ensure build runs
+      - name: Build
+        run: npm run build   # change or remove if not needed
+
+      - name: Install Firebase Tools
+        run: npm install -g firebase-tools
+
+      - name: Deploy to Firebase Hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          # ensure correct project selected (optional)
+          firebase use --add kgn-pharma --token "$FIREBASE_TOKEN" || true
+          # Deploy only hosting (adjust --only if you have functions, etc.)
+          firebase deploy --only hosting --token "$FIREBASE_TOKEN"
