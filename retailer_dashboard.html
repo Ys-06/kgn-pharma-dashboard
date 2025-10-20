@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KGN Pharma — Retailer Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
+    body { min-height: 100vh; background: #f5f7fa; color: #333; }
+    body[data-theme="dark"] { background: #1a1a2e; color: #eee; }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .brand { font-size: 1.5rem; font-weight: bold; }
+    .header > div { display: flex; gap: 10px; }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #fff;
+      color: #667eea;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn.ghost { background: transparent; border: 2px solid white; color: white; }
+    .btn.ghost:hover { background: rgba(255,255,255,0.1); }
+    
+    .tabs {
+      display: flex;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      overflow-x: auto;
+    }
+    body[data-theme="dark"] .tabs { background: #16213e; }
+    .tab {
+      padding: 1rem 1.5rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+    body[data-theme="dark"] .tab { color: #aaa; }
+    .tab.active { color: #667eea; border-bottom-color: #667eea; }
+    
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+    .tab-section { display: none; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    body[data-theme="dark"] .card { background: #16213e; }
+    
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .controls input, .controls select {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      flex: 1;
+      min-width: 150px;
+    }
+    
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .product-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: transform 0.3s;
+    }
+    body[data-theme="dark"] .product-card { background: #16213e; }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+    .product-card h3 { color: #667eea; margin-bottom: 0.5rem; font-size: 1.1rem; }
+    .product-details { margin: 1rem 0; font-size: 0.9rem; line-height: 1.6; color: #666; }
+    body[data-theme="dark"] .product-details { color: #aaa; }
+    
+    .qty-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .qty-input-group input[type="number"] {
+      width: 80px;
+      padding: 8px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    
+    .order-row {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    body[data-theme="dark"] .order-row { background: #16213e; }
+    .order-status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-delivered { background: #d1fae5; color: #065f46; }
+    
+    .form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .form-row input { flex: 1; min-width: 200px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="brand">KGN Pharma — Retailer</div>
+    <div>
+      <button class="btn" onclick="showCart()" id="cartBtn">Cart (0)</button>
+      <button class="btn ghost" onclick="toggleTheme()">Toggle Theme</button>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Cart Modal -->
+  <div id="cartModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
+    <div style="position:relative;background:#fff;max-width:600px;margin:40px auto;padding:20px;border-radius:12px;box-shadow:0 4px 30px rgba(0,0,0,0.3);">
+      <h2 style="margin-bottom:20px;color:#667eea;">Shopping Cart</h2>
+      <div id="cartItems" style="max-height:400px;overflow-y:auto;"></div>
+      <div style="margin-top:16px;padding-top:16px;border-top:2px solid #eee;">
+        <div style="font-size:1.2em;font-weight:bold;margin-bottom:12px;color:#667eea;">Total: ₹<span id="cartTotal">0</span></div>
+        <button class="btn" onclick="placeCartOrder()" style="background:#667eea;color:white;margin-right:10px;">Place Order</button>
+        <button class="btn ghost" onclick="closeCart()" style="color:#667eea;border-color:#667eea;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="home" onclick="openTab(event)">Home</button>
+    <button class="tab" data-tab="products" onclick="openTab(event)">Products</button>
+    <button class="tab" data-tab="orders" onclick="openTab(event)">Orders</button>
+    <button class="tab" data-tab="offers" onclick="openTab(event)">Offers</button>
+    <!-- <button class="tab" data-tab="payments" onclick="openTab(event)">Payments</button>
+    <button class="tab" data-tab="notifications" onclick="openTab(event)">Notifications</button> -->
+    <button class="tab" data-tab="profile" onclick="openTab(event)">Profile</button>
+  </nav>
+
+  <main class="container">
+    <section id="home" class="tab-section" style="display:block;">
+      <h2 style="margin-bottom:1rem;">Dashboard Overview</h2>
+      <div class="grid">
+        <div class="card">
+          <h3 style="color:#667eea;margin-bottom:0.5rem;">Today's Summary</h3>
+          <div id="todaySummary" style="font-size:1.1rem;margin-top:10px;">Orders: 0 • Pending: 0 • Delivered: 0</div>
+        </div>
+        <div class="card">
+          <h3 style="color:#667eea;margin-bottom:0.5rem;">Outstanding Amount</h3>
+          <div id="outstanding" style="font-size:2rem;font-weight:bold;color:#667eea;margin-top:10px;">₹0</div>
+        </div>
+        <div class="card">
+          <h3 style="color:#667eea;margin-bottom:0.5rem;">Quick Actions</h3>
+          <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn" onclick="openTabById('products')" style="background:#667eea;color:white;">Place Order</button>
+            <button class="btn ghost" onclick="openTabById('products')" style="color:#667eea;border-color:#667eea;">View Stock</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="products" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Products / Stock List</h2>
+      <div class="controls">
+        <input id="searchBox" placeholder="🔍 Search product..." />
+        <select id="filterCompany"><option value="">All companies</option></select>
+        <select id="filterCategory"><option value="">All Categories</option><option value="Ethical">Ethical</option><option value="Generic">Generic</option></select>
+        <select id="filterPacking"><option value="">All Packing</option><option>Strip</option><option>Bottle</option><option>Tube</option></select>
+      </div>
+      <div id="offersSection" style="margin-bottom:1.5rem;padding:1rem;background:#f0f4ff;border-radius:8px;"></div>
+      <div id="productList" class="products"></div>
+    </section>
+
+    <section id="orders" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Your Orders</h2>
+      <div id="ordersTable"></div>
+    </section>
+
+    <section id="offers" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Offers & Schemes</h2>
+      <div class="offersSection" style="margin-bottom:1.5rem;padding:1rem;background:#f0f4ff;border-radius:8px;"></div>
+      <div class="productList" class="products"></div>
+      <div id="offersList"></div>
+    </section>
+
+    <!-- <section id="payments" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Payments</h2>
+      <div id="paymentsList">No payment records available.</div>
+    </section> -->
+
+    <!-- <section id="notifications" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Notifications</h2>
+      <div id="notificationsList">No new notifications.</div>
+    </section> -->
+
+    <section id="profile" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Your Profile</h2>
+      <div class="card">
+        <div class="form-row">
+          <input id="profileName" placeholder="Name" />
+          <input id="profileEmail" placeholder="Email" />
+          <input id="profileMobile" placeholder="Mobile" />
+        </div>
+        <div style="margin-top:1rem;">
+          <button class="btn" onclick="saveProfile()" style="background:#667eea;color:white;">Save Changes</button>
+        </div>
+      </div>
+    </section>
+  </main>
+ 
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, push, get } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzHXz0jlGO5_QrMS6pwUv-rSVS81w0hps",
+    authDomain: "kgn-pharma.firebaseapp.com",
+    databaseURL: "https://kgn-pharma-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kgn-pharma",
+    storageBucket: "kgn-pharma.firebasestorage.app",
+    messagingSenderId: "66015599179",
+    appId: "1:66015599179:web:1a13042be883ed4cd30bce",
+    measurementId: "G-S7BTZZ6VRG"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window.db = db;
+  
+  function waitForDb(callback) {
+    if (window.db) callback(window.db);
+    else setTimeout(() => waitForDb(callback), 50);
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function renderProductCard(id, p) {
+    let offersHtml = '';
+    if (window._offers && Object.keys(window._offers).length > 0) {
+      offersHtml = '<div style="margin-bottom:8px;padding:8px;background:#f0f9ff;border-radius:6px;font-size:0.9em;color:#0369a1;">' +
+        Object.values(window._offers).map(o => `<div><strong>🎁 ${escapeHtml(o.title)}</strong>: ${escapeHtml(o.desc || o.description || '')}</div>`).join('') + '</div>';
+    }
+    
+    const stockColor = (p.qty || 0) < 10 ? '#ef4444' : '#22c55e';
+    
+    return `
+      <div class="product-card" data-id="${id}" data-name="${escapeHtml(p.name)}" data-company="${escapeHtml(p.company)}" data-category="${escapeHtml(p.category || '')}" data-packing="${escapeHtml(p.packing || '')}" data-stock="${p.qty || 0}">
+        <h3>${escapeHtml(p.name)}</h3>
+        ${offersHtml}
+        <div class="product-details">
+          <strong>Company:</strong> ${escapeHtml(p.company || 'N/A')}<br>
+          <strong>Category:</strong> ${escapeHtml(p.category || 'N/A')}<br>
+          <strong>Packing:</strong> ${escapeHtml(p.packing || 'N/A')}<br>
+          <strong>Stock:</strong> <span style="color:${stockColor};font-weight:bold;">${p.qty || 0} units</span><br>
+          <strong>Price:</strong> ₹${p.ptr || 0}
+        </div>
+        <div class="qty-input-group">
+          <label style="font-weight:600;">Qty:</label>
+          <input type="number" min="1" max="${p.qty || 999}" value="1" id="qty_${id}" />
+          <button class="btn" onclick="addToCart('${id}')" style="flex:1;background:#667eea;color:white;">Add to Cart</button>
+          <button class="btn ghost" onclick="placeOrder('${id}')" style="color:#667eea;border-color:#667eea;">Buy Now</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function loadProducts() {
+    waitForDb((db) => {
+      const productsRef = ref(db, 'products');
+      onValue(productsRef, (snapshot) => {
+        window._products = snapshot.val() || {};
+        const container = document.getElementById('productList');
+        if (!container) return;
+        
+        const companies = new Set();
+        Object.values(window._products).forEach(p => companies.add(p.company));
+        const companySelect = document.getElementById('filterCompany');
+        if (companySelect) {
+          const currentValue = companySelect.value;
+          companySelect.innerHTML = '<option value="">All companies</option>' + 
+            Array.from(companies).sort().map(c => 
+              `<option value="${escapeHtml(c)}"${currentValue === c ? ' selected' : ''}>${escapeHtml(c)}</option>`
+            ).join('');
+        }
+        
+        const offersSummaryEl = document.getElementById('offersSection');
+        if (offersSummaryEl) {
+          if (window._offers && Object.keys(window._offers).length > 0) {
+            offersSummaryEl.innerHTML = '<h3 style="color:#667eea;margin-bottom:10px;">🎁 Current Offers</h3>' + 
+              Object.values(window._offers).map(o => `<div style="padding:8px 0;"><strong>${escapeHtml(o.title)}</strong>: ${escapeHtml(o.desc || o.description || '')}</div>`).join('');
+          } else {
+            offersSummaryEl.innerHTML = '<div style="color:#666;">No offers available at the moment.</div>';
+          }
+        }
+
+        container.innerHTML = Object.entries(window._products).map(([id, p]) => renderProductCard(id, p)).join('');
+        applyFilters();
+      });
+      
+      const offersRef = ref(db, 'offers');
+      onValue(offersRef, (snapshot) => {
+        window._offers = snapshot.val() || {};
+        const container = document.getElementById('productList');
+        if (container && window._products) {
+          container.innerHTML = Object.entries(window._products).map(([id, p]) => renderProductCard(id, p)).join('');
+          applyFilters();
+        }
+      });
+    });
+  }
+
+  window.applyFilters = function() {
+    const search = document.getElementById('searchBox')?.value?.toLowerCase() || '';
+    const company = document.getElementById('filterCompany')?.value || '';
+    const category = document.getElementById('filterCategory')?.value || '';
+    const packing = document.getElementById('filterPacking')?.value || '';
+
+    document.querySelectorAll('.product-card').forEach(card => {
+      const name = card.dataset.name?.toLowerCase() || '';
+      const matchSearch = !search || name.includes(search);
+      const matchCompany = !company || card.dataset.company === company;
+      const matchCategory = !category || card.dataset.category === category;
+      const matchPacking = !packing || card.dataset.packing === packing;
+      card.style.display = (matchSearch && matchCompany && matchCategory && matchPacking) ? '' : 'none';
+    });
+  }
+
+  window.placeOrder = function(productId) {
+    waitForDb(async (db) => {
+      try {
+        const qtyInput = document.getElementById(`qty_${productId}`);
+        const qty = parseInt(qtyInput?.value) || 0;
+        
+        if (qty < 1) return alert('Please enter a valid quantity');
+
+        const snapshot = await get(ref(db, 'products/' + productId));
+        if (!snapshot.exists()) return alert('Product not found');
+        const product = snapshot.val();
+        
+        if (qty > product.qty) return alert(`Only ${product.qty} units available!`);
+        
+        const retailerId = sessionStorage.getItem('userId');
+        if (!retailerId) return alert('Please log in again');
+
+        const orderRef = push(ref(db, `retailers/${retailerId}/orders`));
+        await set(orderRef, {
+          productId,
+          productName: product.name,
+          quantity: qty,
+          status: 'pending',
+          orderDate: new Date().toISOString(),
+          total: (product.ptr || 0) * qty
+        });
+
+        alert('✅ Order placed successfully!');
+        qtyInput.value = 1;
+      } catch (err) {
+        console.error('Error placing order:', err);
+        alert('Failed to place order. Please try again.');
+      }
+    });
+  }
+
+  function loadProfile() {
+    waitForDb(async (db) => {
+      const retailerId = sessionStorage.getItem('userId');
+      if (!retailerId) return;
+
+      const snapshot = await get(ref(db, 'retailers/' + retailerId));
+      if (!snapshot.exists()) return;
+
+      const retailer = snapshot.val();
+      document.getElementById('profileName').value = retailer.name || '';
+      document.getElementById('profileEmail').value = retailer.email || '';
+      document.getElementById('profileMobile').value = retailer.mobile || '';
+    });
+  }
+
+  window.saveProfile = function() {
+    waitForDb(async (db) => {
+      const retailerId = sessionStorage.getItem('userId');
+      if (!retailerId) return alert('Please log in again');
+
+      try {
+        const retailerRef = ref(db, `retailers/${retailerId}`);
+        const snap = await get(retailerRef);
+        const existing = snap.val() || {};
+        
+        await set(retailerRef, {
+          ...existing,
+          name: document.getElementById('profileName').value,
+          email: document.getElementById('profileEmail').value,
+          mobile: document.getElementById('profileMobile').value,
+        });
+        alert('✅ Profile updated successfully!');
+      } catch (err) {
+        console.error('Error updating profile:', err);
+        alert('Failed to update profile');
+      }
+    });
+  }
+
+  function loadOrders() {
+    waitForDb((db) => {
+      const retailerId = sessionStorage.getItem('userId');
+      if (!retailerId) return;
+
+      const ordersRef = ref(db, `retailers/${retailerId}/orders`);
+      onValue(ordersRef, (snapshot) => {
+        const orders = snapshot.val() || {};
+        const container = document.getElementById('ordersTable');
+        if (!container) return;
+
+        if (Object.keys(orders).length === 0) {
+          container.innerHTML = '<div class="card">No orders yet. Start shopping!</div>';
+          return;
+        }
+
+        container.innerHTML = Object.entries(orders).reverse().map(([id, order]) => `
+          <div class="order-row">
+            <div style="display:flex;justify-content:space-between;align-items:start;">
+              <div>
+                <strong style="font-size:1.1rem;">${escapeHtml(order.productName || 'Multiple Items')}</strong><br>
+                <span style="color:#666;">Quantity: ${order.quantity || 'N/A'} • Total: <strong>₹${order.total}</strong></span><br>
+                <span style="color:#999;font-size:0.9rem;">📅 ${new Date(order.orderDate).toLocaleDateString('en-IN', {day: 'numeric', month: 'short', year: 'numeric'})}</span>
+              </div>
+              <span class="order-status status-${order.status}">${order.status.toUpperCase()}</span>
+            </div>
+          </div>
+        `).join('');
+
+        updateOverview(orders);
+      });
+    });
+  }
+
+  function updateOverview(orders) {
+    const today = new Date().toDateString();
+    const todayOrders = Object.values(orders).filter(o => new Date(o.orderDate).toDateString() === today);
+    const pending = todayOrders.filter(o => o.status === 'pending').length;
+    const delivered = todayOrders.filter(o => o.status === 'delivered').length;
+    
+    document.getElementById('todaySummary').textContent = 
+      `Orders: ${todayOrders.length} • Pending: ${pending} • Delivered: ${delivered}`;
+      
+    const outstanding = Object.values(orders)
+      .filter(o => o.status === 'pending')
+      .reduce((sum, o) => sum + (o.total || 0), 0);
+    document.getElementById('outstanding').textContent = `₹${outstanding}`;
+  }
+
+  window.toggleTheme = function() {
+    const theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.body.dataset.theme = theme;
+    localStorage.setItem('theme', theme);
+  }
+
+  window.logout = function() {
+    if (confirm('Are you sure you want to logout?')) {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+  }
+
+  window.openTab = function(event) {
+    const tabName = event.target.dataset.tab;
+    document.querySelectorAll('.tab-section').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    const section = document.getElementById(tabName);
+    if (section) section.style.display = 'block';
+  }
+
+  window.openTabById = function(tabName) {
+    document.querySelectorAll('.tab-section').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const tab = document.querySelector(`[data-tab="${tabName}"]`);
+    if (tab) tab.classList.add('active');
+    const section = document.getElementById(tabName);
+    if (section) section.style.display = 'block';
+  }
+
+  // Cart functionality
+  window._cart = [];
+
+  window.addToCart = async function(productId) {
+    const qtyInput = document.getElementById('qty_' + productId);
+    const qty = parseInt(qtyInput?.value) || 0;
+    if (qty < 1) return alert('Please enter a valid quantity');
+
+    try {
+      const snapshot = await get(ref(db, 'products/' + productId));
+      if (!snapshot.exists()) return alert('Product not found');
+      const product = snapshot.val();
+
+      if (qty > product.qty) return alert(`Only ${product.qty} units available!`);
+
+      const existing = window._cart.find(i => i.id === productId);
+      if (existing) {
+        existing.quantity += qty;
+      } else {
+        window._cart.push({ 
+          id: productId, 
+          productId: productId, 
+          name: product.name, 
+          price: product.ptr || 0, 
+          quantity: qty 
+        });
+      }
+
+      document.getElementById('cartBtn').textContent = `Cart (${window._cart.length})`;
+      alert(`✅ ${product.name} added to cart!`);
+      qtyInput.value = 1;
+    } catch (err) {
+      console.error('addToCart error', err);
+      alert('Failed to add to cart');
+    }
+  };
+
+  window.showCart = function() {
+    const modal = document.getElementById('cartModal');
+    const container = document.getElementById('cartItems');
+    if (!modal || !container) return;
+
+    let total = 0;
+    container.innerHTML = window._cart.map(item => {
+      const itemTotal = item.price * item.quantity;
+      total += itemTotal;
+      return `
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #eee;align-items:center;">
+          <div style="flex:1;">
+            <div style="font-weight:bold;font-size:1rem;margin-bottom:4px;">${escapeHtml(item.name)}</div>
+            <div style="color:#666;">Quantity: ${item.quantity} × ₹${item.price}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:bold;font-size:1.1rem;color:#667eea;margin-bottom:6px;">₹${itemTotal}</div>
+            <button class="btn ghost" onclick="removeFromCart('${item.id}')" style="padding:6px 12px;font-size:0.85rem;color:#ef4444;border-color:#ef4444;">Remove</button>
+          </div>
+        </div>
+      `;
+    }).join('') || '<div style="text-align:center;padding:40px;color:#999;">🛒 Cart is empty</div>';
+
+    document.getElementById('cartTotal').textContent = total;
+    modal.style.display = 'block';
+  };
+
+  window.closeCart = function() { 
+    document.getElementById('cartModal').style.display = 'none'; 
+  };
+
+  window.removeFromCart = function(productId) {
+    window._cart = window._cart.filter(i => i.id !== productId);
+    document.getElementById('cartBtn').textContent = `Cart (${window._cart.length})`;
+    window.showCart();
+  };
+
+  window.placeCartOrder = async function() {
+    if (!window._cart.length) return alert('Cart is empty');
+    const retailerId = sessionStorage.getItem('userId');
+    if (!retailerId) return alert('Please log in again');
+
+    try {
+      const orderRef = push(ref(db, `retailers/${retailerId}/orders`));
+      const total = window._cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+      const items = window._cart.map(i => ({
+        productId: i.productId || i.id,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity
+      }));
+      await set(orderRef, { 
+        items, 
+        status: 'pending', 
+        orderDate: new Date().toISOString(), 
+        total 
+      });
+      window._cart = [];
+      document.getElementById('cartBtn').textContent = 'Cart (0)';
+      closeCart();
+      alert('✅ Order placed successfully!');
+    } catch (err) {
+      console.error('placeCartOrder error', err);
+      alert('Failed to place order');
+    }
+  };
+
+  // Initialize everything
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.body.dataset.theme = savedTheme;
+
+    loadProducts();
+    loadProfile();
+    loadOrders();
+
+    document.getElementById('searchBox')?.addEventListener('input', applyFilters);
+    document.querySelectorAll('.controls select').forEach(sel => 
+      sel.addEventListener('change', applyFilters)
+    );
+  });
+
+  console.log("✅ Firebase connected successfully!");
+  </script>
+</body>
+</html>

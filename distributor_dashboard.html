@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KGN Pharma — Distributor Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
+    body { min-height: 100vh; background: #f5f7fa; color: #333; }
+    body[data-theme="dark"] { background: #1a1a2e; color: #eee; }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .brand { font-size: 1.5rem; font-weight: bold; }
+    .header > div { display: flex; gap: 10px; }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #fff;
+      color: #667eea;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn.ghost { background: transparent; border: 2px solid white; color: white; }
+    .btn.ghost:hover { background: rgba(255,255,255,0.1); }
+    .btn-edit { background: #667eea; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px; }
+    .btn-delete { background: #ef4444; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; }
+    
+    .tabs {
+      display: flex;
+      background: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      overflow-x: auto;
+    }
+    body[data-theme="dark"] .tabs { background: #16213e; }
+    .tab {
+      padding: 1rem 1.5rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    body[data-theme="dark"] .tab { color: #aaa; }
+    .tab.active { color: #667eea; border-bottom-color: #667eea; }
+    .tab:hover { color: #667eea; background: rgba(102, 126, 234, 0.05); }
+    
+    .container { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+    .tab-section { display: none; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    body[data-theme="dark"] .card { background: #16213e; }
+    
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #667eea;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    body[data-theme="dark"] .form-group input,
+    body[data-theme="dark"] .form-group select,
+    body[data-theme="dark"] .form-group textarea {
+      background: #0f1419;
+      color: #eee;
+      border-color: #444;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    body[data-theme="dark"] table { background: #16213e; }
+    thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    body[data-theme="dark"] th,
+    body[data-theme="dark"] td { border-bottom-color: #333; }
+    tbody tr:hover { background: #f9fafb; }
+    body[data-theme="dark"] tbody tr:hover { background: #1e2a47; }
+    
+    .retailer-row {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    body[data-theme="dark"] .retailer-row { background: #16213e; }
+    
+    .order-row {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    body[data-theme="dark"] .order-row { background: #16213e; }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    body[data-theme="dark"] .modal-content { background: #16213e; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="brand">KGN Pharma — Distributor</div>
+    <div>
+      <button class="btn ghost" onclick="toggleTheme()">Toggle Theme</button>
+      <button class="btn" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Retailer Edit Modal -->
+  <div id="retailerEditModal" class="modal">
+    <div class="modal-content">
+      <h2 style="color:#667eea;margin-bottom:1.5rem;">Edit Retailer</h2>
+      <form id="retailerEditForm" onsubmit="return false;">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="editRetailerName" required />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="editRetailerEmail" required />
+        </div>
+        <div class="form-group">
+          <label>Mobile</label>
+          <input type="tel" id="editRetailerMobile" required />
+        </div>
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="editRetailerUsername" required />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="text" id="editRetailerPassword" required />
+        </div>
+        <div style="display:flex;gap:10px;margin-top:1.5rem;">
+          <button class="btn" type="submit" style="background:#667eea;color:white;flex:1;">Save Changes</button>
+          <button class="btn ghost" type="button" onclick="closeRetailerEditModal()" style="color:#667eea;border-color:#667eea;">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="home" onclick="openTab(event)">Home</button>
+    <button class="tab" data-tab="products" onclick="openTab(event)">Products</button>
+    <button class="tab" data-tab="orders" onclick="openTab(event)">Orders</button>
+    <button class="tab" data-tab="retailers" onclick="openTab(event)">Retailers</button>
+    <button class="tab" data-tab="offers" onclick="openTab(event)">Offers</button>
+    <button class="tab" data-tab="settings" onclick="openTab(event)">Settings</button>
+  </nav>
+
+  <main class="container">
+    <section id="home" class="tab-section" style="display:block;">
+      <h2 style="margin-bottom:1rem;">Dashboard Overview</h2>
+      <div class="grid">
+        <div class="card">
+          <h3 style="color:#667eea;margin-bottom:0.5rem;">Total Products</h3>
+          <div id="totalProducts" style="font-size:2.5rem;font-weight:bold;color:#667eea;margin-top:10px;">0</div>
+        </div>
+        <div class="card">
+          <h3 style="color:#667eea;margin-bottom:0.5rem;">Total Retailers</h3>
+          <div id="totalRetailers" style="font-size:2.5rem;font-weight:bold;color:#667eea;margin-top:10px;">0</div>
+        </div>
+        <div class="card">
+          <h3 style="color:#667eea;margin-bottom:0.5rem;">Pending Orders</h3>
+          <div id="pendingOrders" style="font-size:2.5rem;font-weight:bold;color:#667eea;margin-top:10px;">0</div>
+        </div>
+        <div class="card">
+          <h3 style="color:#ef4444;margin-bottom:0.5rem;">⚠️ Low Stock Items</h3>
+          <div id="lowStockList" style="margin-top:10px;font-size:0.9rem;max-height:150px;overflow-y:auto;">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="products" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Product Management</h2>
+      
+      <div class="card" style="margin-bottom:2rem;">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Add/Edit Product</h3>
+        <form onsubmit="addOrUpdateProduct(); return false;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1rem;">
+            <div class="form-group">
+              <label>Product Name</label>
+              <input type="text" id="p_name" required />
+            </div>
+            <div class="form-group">
+              <label>Company</label>
+              <input type="text" id="p_company" required />
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="p_category">
+                <option value="Ethical">Ethical</option>
+                <option value="Generic">Generic</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Packing</label>
+              <select id="p_packing">
+                <option value="Strip">Strip</option>
+                <option value="Bottle">Bottle</option>
+                <option value="Tube">Tube</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>MRP (₹)</label>
+              <input type="number" id="p_mrp" step="0.01" required />
+            </div>
+            <div class="form-group">
+              <label>PTR (₹)</label>
+              <input type="number" id="p_ptr" step="0.01" required />
+            </div>
+            <div class="form-group">
+              <label>Quantity</label>
+              <input type="number" id="p_qty" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Content/Description</label>
+            <input type="text" id="p_content" />
+          </div>
+          <button class="btn" type="submit" style="background:#667eea;color:white;margin-top:10px;">Save Product</button>
+        </form>
+      </div>
+      <div class="card" style="margin-bottom:2rem;">
+        <h3 style="color:#667eea;margin-bottom:1rem;">📦 Bulk Import Products</h3>
+        <p style="margin-bottom:1rem;color:#666;line-height:1.6;">
+          Import products from <strong>Excel (.xlsx, .xls)</strong> or <strong>PDF</strong> files.<br>
+          <strong>Excel Format:</strong> name, company, category, packing, mrp, ptr, qty, content<br>
+          <strong>PDF:</strong> Should contain product details in a structured format
+        </p>
+        <div style="display:flex;gap:1rem;align-items:end;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:250px;margin-bottom:0;">
+            <label>Choose File (Excel or PDF)</label>
+            <input type="file" id="bulkProductsUpload" accept=".xlsx,.xls,.pdf" style="padding:8px;" />
+          </div>
+          <button class="btn" onclick="importProductsBulk()" style="background:#667eea;color:white;">📥 Import Products</button>
+        </div>
+        <div id="bulkImportStatus" style="margin-top:1rem;padding:10px;border-radius:6px;display:none;"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Product List</h3>
+        <div id="productsTable" style="overflow-x:auto;"></div>
+      </div>
+    </section>
+
+    <section id="orders" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Order Management</h2>
+      <div id="ordersList"></div>
+    </section>
+
+    <section id="retailers" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Retailer Management</h2>
+      
+      <div class="card" style="margin-bottom:2rem;">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Add New Retailer</h3>
+        <form id="manualRetailerForm" onsubmit="addRetailerManual(event)">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1rem;">
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" id="manualRetailerName" required />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="manualRetailerEmail" required />
+            </div>
+            <div class="form-group">
+              <label>Mobile</label>
+              <input type="tel" id="manualRetailerMobile" required />
+            </div>
+            <div class="form-group">
+              <label>Username</label>
+              <input type="text" id="manualRetailerUsername" required />
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="text" id="manualRetailerPassword" required />
+            </div>
+          </div>
+          <button class="btn" type="submit" style="background:#667eea;color:white;margin-top:10px;">Add Retailer</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin-bottom:2rem;">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Bulk Import (CSV)</h3>
+        <p style="margin-bottom:1rem;color:#666;">CSV format: name,email,mobile,username,password</p>
+        <input type="file" id="retailersCsvUpload" accept=".csv" />
+        <button class="btn" onclick="importRetailersCSV()" style="background:#667eea;color:white;margin-top:10px;">Import CSV</button>
+      </div>
+
+      <div class="card">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Retailer List</h3>
+        <div id="retailersList"></div>
+      </div>
+    </section>
+
+    <section id="offers" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Offers & Schemes</h2>
+      
+      <div class="card" style="margin-bottom:2rem;">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Add New Offer</h3>
+        <form onsubmit="addOffer(); return false;">
+          <div class="form-group">
+            <label>Offer Title</label>
+            <input type="text" id="o_title" required />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="o_desc" rows="3"></textarea>
+          </div>
+          <button class="btn" type="submit" style="background:#667eea;color:white;">Add Offer</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Active Offers</h3>
+        <table id="offersTable">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="settings" class="tab-section">
+      <h2 style="margin-bottom:1rem;">Settings</h2>
+      <div class="card">
+        <h3 style="color:#667eea;margin-bottom:1rem;">Distributor Profile</h3>
+        <form onsubmit="saveSettings(); return false;">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="s_name" />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="s_email" />
+          </div>
+          <div class="form-group">
+            <label>Mobile</label>
+            <input type="tel" id="s_mobile" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="s_pass" />
+          </div>
+          <button class="btn" type="submit" style="background:#667eea;color:white;">Save Settings</button>
+          <div id="settingsMsg" style="margin-top:10px;color:#22c55e;"></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set, push, get, remove } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzHXz0jlGO5_QrMS6pwUv-rSVS81w0hps",
+    authDomain: "kgn-pharma.firebaseapp.com",
+    databaseURL: "https://kgn-pharma-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "kgn-pharma",
+    storageBucket: "kgn-pharma.firebasestorage.app",
+    messagingSenderId: "66015599179",
+    appId: "1:66015599179:web:1a13042be883ed4cd30bce",
+    measurementId: "G-S7BTZZ6VRG"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  window.db = db;
+
+  function waitForDb(callback) {
+    if (window.db) callback(window.db);
+    else setTimeout(() => waitForDb(callback), 50);
+  }
+
+  function escapeHtml(text) {
+    if (!text && text !== 0) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+  }
+
+  // Tab navigation
+  window.openTab = function(event) {
+    const tabName = event.target.dataset.tab;
+    document.querySelectorAll('.tab-section').forEach(s => s.style.display = 'none');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    const section = document.getElementById(tabName);
+    if (section) section.style.display = 'block';
+  };
+
+  // Theme toggle
+  window.toggleTheme = function() {
+    const theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.body.dataset.theme = theme;
+    localStorage.setItem('theme', theme);
+  };
+
+  // Logout
+  window.logout = function() {
+    if (confirm('Are you sure you want to logout?')) {
+      sessionStorage.clear();
+      window.location.href = 'login.html';
+    }
+  };
+
+  // Products Management
+  window._editingProductId = null;
+
+  function renderProductsTable() {
+    waitForDb((db) => {
+      const productsRef = ref(db, 'products');
+      onValue(productsRef, (snapshot) => {
+        const products = snapshot.val() || {};
+        const container = document.getElementById('productsTable');
+        if (!container) return;
+
+        const rows = Object.entries(products).map(([id, p]) =>
+          `<tr>
+            <td>${escapeHtml(p.name)}<br><small style="color:#666;">${escapeHtml(p.content||'')}</small></td>
+            <td>${escapeHtml(p.company)}</td>
+            <td>${escapeHtml(p.category||'')}</td>
+            <td>${escapeHtml(p.packing||'')}</td>
+            <td>MRP: ₹${p.mrp || 0}<br>PTR: ₹${p.ptr || 0}</td>
+            <td><span style="color:${(p.qty||0)<10?'#ef4444':'#22c55e'};font-weight:bold;">${p.qty || 0}</span></td>
+            <td>
+              <button class="btn" onclick="increaseProductQty('${id}')" style="background:#22c55e;color:white;margin-bottom:5px;">+ Qty</button><br>
+              <button class="btn-edit" onclick="editProduct('${id}')">Edit</button>
+              <button class="btn-delete" onclick="deleteProduct('${id}')">Delete</button>
+            </td>
+          </tr>`
+        ).join('');
+
+        container.innerHTML = `<table>
+          <thead><tr><th>Product</th><th>Company</th><th>Category</th><th>Packing</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="7" style="text-align:center;padding:20px;">No products yet</td></tr>'}</tbody>
+        </table>`;
+
+        // Update dashboard stats
+        document.getElementById('totalProducts').textContent = Object.keys(products).length;
+        const lowStock = Object.values(products).filter(p => (p.qty || 0) < 10);
+        const lowStockEl = document.getElementById('lowStockList');
+        if (lowStockEl) {
+          lowStockEl.innerHTML = lowStock.length > 0 
+            ? lowStock.map(p => `<div style="padding:4px 0;">${escapeHtml(p.name)} (${p.qty} left)</div>`).join('')
+            : '<div style="color:#22c55e;">✓ All products well stocked</div>';
+        }
+      });
+    });
+  }
+
+  window.addOrUpdateProduct = function() {
+    waitForDb(async (db) => {
+      const name = document.getElementById('p_name').value.trim();
+      const company = document.getElementById('p_company').value.trim();
+      const category = document.getElementById('p_category').value;
+      const packing = document.getElementById('p_packing').value;
+      const mrp = parseFloat(document.getElementById('p_mrp').value) || 0;
+      const ptr = parseFloat(document.getElementById('p_ptr').value) || 0;
+      const qty = parseInt(document.getElementById('p_qty').value) || 0;
+      const content = document.getElementById('p_content').value.trim();
+
+      if (!name || !company) return alert('Please fill required fields');
+
+      try {
+        if (window._editingProductId) {
+          await set(ref(db, 'products/' + window._editingProductId), {
+            name, company, category, packing, mrp, ptr, qty, content
+          });
+          window._editingProductId = null;
+          alert('✅ Product updated successfully!');
+        } else {
+          const newRef = push(ref(db, 'products'));
+          await set(newRef, { name, company, category, packing, mrp, ptr, qty, content });
+          alert('✅ Product added successfully!');
+        }
+
+        // Clear form
+        document.getElementById('p_name').value = '';
+        document.getElementById('p_company').value = '';
+        document.getElementById('p_qty').value = '';
+        document.getElementById('p_content').value = '';
+        document.getElementById('p_mrp').value = '';
+        document.getElementById('p_ptr').value = '';
+      } catch (err) {
+        console.error('Error saving product:', err);
+        alert('Failed to save product');
+      }
+    });
+  };
+
+  window.editProduct = function(id) {
+    waitForDb(async (db) => {
+      const snap = await get(ref(db, 'products/' + id));
+      if (!snap.exists()) return alert('Product not found');
+      const p = snap.val();
+
+      document.getElementById('p_name').value = p.name || '';
+      document.getElementById('p_company').value = p.company || '';
+      document.getElementById('p_category').value = p.category || 'Ethical';
+      document.getElementById('p_packing').value = p.packing || 'Strip';
+      document.getElementById('p_mrp').value = p.mrp || '';
+      document.getElementById('p_ptr').value = p.ptr || '';
+      document.getElementById('p_qty').value = p.qty || '';
+      document.getElementById('p_content').value = p.content || '';
+      
+      window._editingProductId = id;
+      document.querySelector('[data-tab="products"]').click();
+      window.scrollTo(0, 0);
+    });
+  };
+
+  window.deleteProduct = function(id) {
+    if (!confirm('Delete this product?')) return;
+    waitForDb(async (db) => {
+      await remove(ref(db, 'products/' + id));
+      alert('✅ Product deleted');
+    });
+  };
+
+  window.increaseProductQty = function(id) {
+    waitForDb(async (db) => {
+      const snap = await get(ref(db, 'products/' + id));
+      if (!snap.exists()) return alert('Product not found');
+      const prod = snap.val();
+      
+      const addQty = prompt('Enter quantity to add:', '10');
+      if (!addQty) return;
+      const n = parseInt(addQty);
+      if (isNaN(n) || n <= 0) return alert('Invalid quantity');
+      
+      await set(ref(db, 'products/' + id), { ...prod, qty: (prod.qty || 0) + n });
+      alert('✅ Quantity updated');
+    });
+  };
+
+  // Retailers Management
+  function renderRetailers() {
+    waitForDb((db) => {
+      const retailersRef = ref(db, 'retailers');
+      onValue(retailersRef, (snapshot) => {
+        const retailers = snapshot.val() || {};
+        const container = document.getElementById('retailersList');
+        if (!container) return;
+
+        container.innerHTML = Object.entries(retailers).map(([id, r]) =>
+          `<div class="retailer-row">
+            <div>
+              <strong style="font-size:1.1rem;">${escapeHtml(r.name)}</strong><br>
+              <span style="color:#666;">📧 ${escapeHtml(r.email)} | 📱 ${escapeHtml(r.mobile)} | 👤 ${escapeHtml(r.username)}</span>
+            </div>
+            <button class="btn" onclick="openRetailerEditModal('${id}')" style="background:#667eea;color:white;">View/Edit</button>
+          </div>`
+        ).join('') || '<div class="card">No retailers yet</div>';
+
+        document.getElementById('totalRetailers').textContent = Object.keys(retailers).length;
+      });
+    });
+  }
+
+  window.openRetailerEditModal = function(id) {
+    waitForDb(async (db) => {
+      const snap = await get(ref(db, 'retailers/' + id));
+      if (!snap.exists()) return alert('Retailer not found');
+      
+      const r = snap.val();
+      document.getElementById('editRetailerName').value = r.name || '';
+      document.getElementById('editRetailerEmail').value = r.email || '';
+      document.getElementById('editRetailerMobile').value = r.mobile || '';
+      document.getElementById('editRetailerUsername').value = r.username || '';
+      document.getElementById('editRetailerPassword').value = r.password || '';
+      
+      const form = document.getElementById('retailerEditForm');
+      form.dataset.id = id;
+      document.getElementById('retailerEditModal').style.display = 'flex';
+    });
+  };
+
+  window.closeRetailerEditModal = function() {
+    document.getElementById('retailerEditModal').style.display = 'none';
+  };
+
+  document.getElementById('retailerEditForm').onsubmit = function(e) {
+    e.preventDefault();
+    const id = this.dataset.id;
+    const name = document.getElementById('editRetailerName').value.trim();
+    const email = document.getElementById('editRetailerEmail').value.trim();
+    const mobile = document.getElementById('editRetailerMobile').value.trim();
+    const username = document.getElementById('editRetailerUsername').value.trim();
+    const password = document.getElementById('editRetailerPassword').value.trim();
+
+    if (!name || !email || !mobile || !username || !password) {
+      return alert('Please fill all fields');
+    }
+
+    waitForDb(async (db) => {
+      await set(ref(db, 'retailers/' + id), {
+        name, email, mobile, username, password, orders: {}, payments: {}
+      });
+      alert('✅ Retailer updated successfully!');
+      closeRetailerEditModal();
+    });
+  };
+
+  window.addRetailerManual = async function(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('manualRetailerName').value.trim();
+    const email = document.getElementById('manualRetailerEmail').value.trim();
+    const mobile = document.getElementById('manualRetailerMobile').value.trim();
+    const username = document.getElementById('manualRetailerUsername').value.trim();
+    const password = document.getElementById('manualRetailerPassword').value.trim();
+
+    if (!name || !email || !mobile || !username || !password) {
+      return alert('Please fill all fields');
+    }
+
+    try {
+      const db = window.db;
+      if (!db) throw new Error('Database not connected');
+
+      // Check if username already exists
+      const retailersRef = ref(db, 'retailers');
+      const snapshot = await get(retailersRef);
+      
+      if (snapshot.exists()) {
+        const retailers = snapshot.val();
+        for (const id in retailers) {
+          if (retailers[id].username === username || retailers[id].email === email) {
+            return alert('A retailer with this username or email already exists');
+          }
+        }
+      }
+
+      // Add new retailer
+      const newRetailerRef = push(retailersRef);
+      await set(newRetailerRef, {
+        name, email, mobile, username, password, orders: {}, payments: {}, dues: 0
+      });
+
+      // Clear form
+      document.getElementById('manualRetailerForm').reset();
+      alert('✅ Retailer added successfully!');
+
+    } catch (error) {
+      console.error('Error adding retailer:', error);
+      alert('Failed to add retailer. Please try again.');
+    }
+  };
+
+  window.importRetailersCSV = function() {
+    waitForDb(async (db) => {
+      const fileEl = document.getElementById('retailersCsvUpload');
+      const file = fileEl?.files?.[0];
+      if (!file) return alert('Please select a CSV file');
+      
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const text = e.target.result;
+          const rows = text.split(/\r?\n/).map(r => r.trim()).filter(Boolean);
+          let imported = 0;
+          
+          for (const ln of rows) {
+            const cols = ln.split(',').map(c => c.trim());
+            const [name, email, mobile, username, password] = cols;
+            
+            if (!name || !email || !mobile || !username || !password) continue;
+            
+            const newRetailerRef = push(ref(db, 'retailers'));
+            await set(newRetailerRef, {
+              name, email, mobile, username, password, orders: {}, payments: {}, dues: 0
+            });
+            imported++;
+          }
+          
+          alert(`✅ Successfully imported ${imported} retailers!`);
+          fileEl.value = '';
+        } catch (err) {
+          console.error('Error importing CSV:', err);
+          alert('Failed to import CSV. Please check the format.');
+        }
+      };
+      reader.readAsText(file);
+    });
+  };
+
+  // Orders Management
+  function renderAllOrders() {
+    waitForDb((db) => {
+      const retailersRef = ref(db, 'retailers');
+      onValue(retailersRef, (snap) => {
+        const retailers = snap.val() || {};
+        const container = document.getElementById('ordersList');
+        if (!container) return;
+        
+        const allOrders = [];
+        let pendingCount = 0;
+        
+        for (const rId in retailers) {
+          const r = retailers[rId];
+          const orders = r.orders || {};
+          for (const oId in orders) {
+            const o = orders[oId];
+            if (o.status === 'pending') pendingCount++;
+            allOrders.push({ retailerId: rId, orderId: oId, retailerName: r.name, ...o });
+          }
+        }
+        
+        // Sort by date (newest first)
+        allOrders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+        
+        container.innerHTML = allOrders.map(order => {
+          const itemsHtml = order.items 
+            ? (Array.isArray(order.items) 
+                ? order.items.map(it => `${escapeHtml(it.name)} x${it.quantity}`).join(', ') 
+                : (order.productName || 'Item'))
+            : (order.productName || 'Item');
+            
+          return `<div class="order-row">
+            <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:10px;">
+              <div style="flex:1;">
+                <strong style="font-size:1.1rem;">${escapeHtml(order.retailerName)}</strong><br>
+                <span style="color:#666;">📦 ${itemsHtml}</span><br>
+                <span style="color:#666;">Total: <strong>₹${order.total || 0}</strong> | 📅 ${new Date(order.orderDate).toLocaleDateString('en-IN')}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <select onchange="updateOrderStatus('${order.retailerId}','${order.orderId}', this.value)" 
+                        style="padding:8px;border-radius:6px;border:2px solid #667eea;font-weight:600;cursor:pointer;">
+                  <option value="pending" ${order.status==='pending'?'selected':''}>⏳ Pending</option>
+                  <option value="delivered" ${order.status==='delivered'?'selected':''}>✅ Delivered</option>
+                  <option value="cancelled" ${order.status==='cancelled'?'selected':''}>❌ Cancelled</option>
+                </select>
+              </div>
+            </div>
+          </div>`;
+        }).join('') || '<div class="card">No orders yet</div>';
+        
+        document.getElementById('pendingOrders').textContent = pendingCount;
+      });
+    });
+  }
+
+  window.updateOrderStatus = function(retailerId, orderId, status) {
+    waitForDb(async (db) => {
+      try {
+        const orderRef = ref(db, `retailers/${retailerId}/orders/${orderId}`);
+        const snap = await get(orderRef);
+        if (!snap.exists()) return alert('Order not found');
+        
+        const data = snap.val();
+        data.status = status;
+        await set(orderRef, data);
+        
+        // If delivered, reduce stock
+        if (status === 'delivered') {
+          if (data.items && Array.isArray(data.items)) {
+            // Cart order with multiple items
+            for (const item of data.items) {
+              const prodId = item.productId || item.id;
+              const qtyOrdered = item.quantity || 1;
+              if (!prodId) continue;
+              
+              const prodRef = ref(db, 'products/' + prodId);
+              const prodSnap = await get(prodRef);
+              if (prodSnap.exists()) {
+                const prod = prodSnap.val();
+                let newQty = (prod.qty || 0) - qtyOrdered;
+                if (newQty < 0) newQty = 0;
+                await set(prodRef, { ...prod, qty: newQty });
+                
+                if (newQty < 10) {
+                  console.warn(`⚠️ Low stock: ${prod.name} (${newQty} left)`);
+                }
+              }
+            }
+          } else if (data.productId) {
+            // Single product order
+            const prodRef = ref(db, 'products/' + data.productId);
+            const prodSnap = await get(prodRef);
+            if (prodSnap.exists()) {
+              const prod = prodSnap.val();
+              let newQty = (prod.qty || 0) - (data.quantity || 1);
+              if (newQty < 0) newQty = 0;
+              await set(prodRef, { ...prod, qty: newQty });
+              
+              if (newQty < 10) {
+                console.warn(`⚠️ Low stock: ${prod.name} (${newQty} left)`);
+              }
+            }
+          }
+        }
+        
+        alert('✅ Order status updated successfully!');
+      } catch (err) {
+        console.error('Error updating order:', err);
+        alert('Failed to update order status');
+      }
+    });
+  };
+
+  // Offers Management
+  function renderOffers() {
+    waitForDb((db) => {
+      const offersRef = ref(db, 'offers');
+      onValue(offersRef, (snap) => {
+        const offers = snap.val() || {};
+        const tbody = document.querySelector('#offersTable tbody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = Object.entries(offers).map(([id, o]) => 
+          `<tr>
+            <td><strong>${escapeHtml(o.title)}</strong></td>
+            <td>${escapeHtml(o.desc || o.description || '')}</td>
+            <td>
+              <button class="btn-delete" onclick="deleteOffer('${id}')">Delete</button>
+            </td>
+          </tr>`
+        ).join('') || '<tr><td colspan="3" style="text-align:center;padding:20px;">No offers yet</td></tr>';
+      });
+    });
+  }
+
+  window.addOffer = function() {
+    waitForDb(async (db) => {
+      const title = document.getElementById('o_title')?.value?.trim();
+      const desc = document.getElementById('o_desc')?.value?.trim();
+      
+      if (!title) return alert('Please provide offer title');
+      
+      try {
+        const newRef = push(ref(db, 'offers'));
+        await set(newRef, { 
+          title, 
+          desc, 
+          description: desc, // Support both field names
+          createdAt: new Date().toISOString() 
+        });
+        
+        document.getElementById('o_title').value = '';
+        document.getElementById('o_desc').value = '';
+        alert('✅ Offer added successfully!');
+      } catch (err) {
+        console.error('Error adding offer:', err);
+        alert('Failed to add offer');
+      }
+    });
+  };
+
+  window.deleteOffer = function(id) {
+    if (!confirm('Delete this offer?')) return;
+    waitForDb(async (db) => {
+      await remove(ref(db, 'offers/' + id));
+      alert('✅ Offer deleted');
+    });
+  };
+
+  // Settings
+  window.saveSettings = function() {
+    waitForDb(async (db) => {
+      const name = document.getElementById('s_name')?.value?.trim();
+      const email = document.getElementById('s_email')?.value?.trim();
+      const mobile = document.getElementById('s_mobile')?.value?.trim();
+      const pass = document.getElementById('s_pass')?.value?.trim();
+      
+      if (!name || !email || !mobile || !pass) {
+        document.getElementById('settingsMsg').textContent = 'Please fill all fields.';
+        document.getElementById('settingsMsg').style.color = '#ef4444';
+        return;
+      }
+      
+      try {
+        await set(ref(db, 'distributor_settings'), { name, email, mobile, pass });
+        document.getElementById('settingsMsg').textContent = '✅ Settings saved successfully!';
+        document.getElementById('settingsMsg').style.color = '#22c55e';
+      } catch (err) {
+        console.error('Error saving settings:', err);
+        document.getElementById('settingsMsg').textContent = 'Failed to save settings';
+        document.getElementById('settingsMsg').style.color = '#ef4444';
+      }
+    });
+  };
+
+  // Initialize everything
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) document.body.dataset.theme = savedTheme;
+
+    renderProductsTable();
+    renderRetailers();
+    renderAllOrders();
+    renderOffers();
+  });
+
+  console.log("✅ Firebase connected successfully!");
+  </script>
+</body>
+</html>
